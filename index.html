@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#fffdf8"
+        media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#1d1a16"
+        media="(prefers-color-scheme: dark)" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Go Go Osaka" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="manifest" href="app.webmanifest" />
+  <link rel="stylesheet" href="styles.css" />
+  <title>Go Go Osaka</title>
+</head>
+<body>
+  <header id="appHeader" class="app-header">
+    <h1 id="headerTitle">Osaka 2026</h1>
+    <div id="headerActions" class="header-actions"></div>
+  </header>
+
+  <main id="viewRoot" class="view-root" aria-live="polite"></main>
+
+  <nav id="tabBar" class="tab-bar" role="tablist" aria-label="Sections">
+    <button class="tab" data-route="journey" role="tab">
+      <span class="tab-icon tab-icon--home" aria-hidden="true"></span><span class="tab-label">Home</span>
+    </button>
+    <button class="tab" data-route="budget"  role="tab">
+      <span class="tab-icon tab-icon--money" aria-hidden="true"></span><span class="tab-label">Money</span>
+    </button>
+    <button class="tab" data-route="restaurants" role="tab">
+      <span class="tab-icon tab-icon--restaurants" aria-hidden="true"></span><span class="tab-label">Restaurants</span>
+    </button>
+    <button class="tab" data-route="trip"   role="tab">
+      <span class="tab-icon tab-icon--trip" aria-hidden="true"></span><span class="tab-label">Trip</span>
+    </button>
+  </nav>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
