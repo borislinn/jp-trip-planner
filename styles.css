@@ -769,13 +769,10 @@ a:focus-visible,
 }
 .transfer-route {
   align-items: center;
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
   gap: 7px;
-  grid-template-columns: auto auto auto auto minmax(0, 1fr);
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-x: contain;
-  touch-action: pan-x;
+  min-width: 0;
 }
 .transfer-route span,
 .transfer-route strong {
