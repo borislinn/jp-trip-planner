@@ -1180,8 +1180,44 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   font-size: 1.05rem;
   white-space: nowrap;
 }
-.expense-card > .btn-text {
+.restaurant-filters {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin-bottom: 14px;
+  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
+}
+.restaurant-filter {
+  flex-shrink: 0;
+  background: var(--surface-muted);
   color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: .85rem;
+  font-weight: 700;
+}
+.restaurant-filter.is-selected {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: transparent;
+}
+.home-approx {
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.card-actions .btn-text { color: var(--muted); }
+.expense-card > .card-actions {
+  justify-content: flex-end;
   margin: 6px -8px -8px auto;
 }
 .category-choice-group {

@@ -300,7 +300,7 @@ export function lightbox(src) {
 // Receipt photo picker. Imports the downscaler lazily so this module stays
 // importable where the browser image APIs are absent. Returns
 // { element, get } where get() yields the data URL or null.
-export function receiptPicker() {
+export function receiptPicker(initial = null) {
   let value = null;
   const input = el("input", {
     type: "file", accept: "image/*", capture: "environment"
@@ -338,6 +338,8 @@ export function receiptPicker() {
       status.textContent = e.message || "Could not load the photo.";
     }
   });
+
+  if (initial) show(initial);
 
   const element = el("div", { class: "field" }, [
     el("label", {}, t("Receipt photo")),

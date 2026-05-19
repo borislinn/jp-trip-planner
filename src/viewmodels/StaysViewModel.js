@@ -20,6 +20,7 @@ export class StaysViewModel {
     }
     this.lastError = null;
     await this.repo.put("stays", {
+      ...(d.id ? { id: d.id } : {}),
       hotelName: d.hotelName.trim(),
       checkIn: d.checkIn, checkOut: d.checkOut,
       bookingReference: d.bookingReference?.trim() || null,

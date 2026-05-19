@@ -1,7 +1,7 @@
 import { BudgetViewModel } from "../viewmodels/BudgetViewModel.js";
 import { BUDGET_CATEGORIES, categoryById } from "../domain/enums.js";
 import { t } from "../domain/i18n.js";
-import { formatCurrency } from "../domain/money.js";
+import { formatCurrency, homeApprox } from "../domain/money.js";
 import {
   el, empty, openSheet, field, helpText, moneyInput, progressBar, sectionTitle, toast
 } from "./components.js";
@@ -13,6 +13,10 @@ export async function render(root, header, repo) {
   const cur = vm.settings.currencyCode;
   const fmt = v => formatCurrency(v, cur);
   const colorFor = id => categoryById(id).color;
+  const approxNode = jpy => {
+    const text = homeApprox(jpy, vm.settings.homeCurrency, vm.settings.homeRate);
+    return text ? el("div", { class: "home-approx" }, text) : null;
+  };
 
   header.setTitle(t("Money"));
   header.setActions([
@@ -95,7 +99,8 @@ export async function render(root, header, repo) {
         el("div", {}, [
           el("span", { class: "eyebrow" }, t("Trip Balance")),
           el("strong", { class: vm.remaining < 0 ? "balance danger" : "balance good" },
-            fmt(vm.remaining))
+            fmt(vm.remaining)),
+          approxNode(vm.remaining)
         ]),
         el("span", { class: "status-chip" }, progressLabel)
       ]),
@@ -146,16 +151,30 @@ export async function render(root, header, repo) {
           value: vm.categoryBudgets[c.id] ? fmt(vm.categoryBudgets[c.id]) : ""
         }, cur)
       ]));
+      const homeCur = el("input", {
+        type: "text", autocomplete: "off", maxlength: "3",
+        placeholder: "USD", value: vm.settings.homeCurrency || ""
+      });
+      const homeRate = el("input", {
+        type: "text", inputmode: "decimal", autocomplete: "off",
+        placeholder: "155", value: vm.settings.homeRate || ""
+      });
       return el("div", {}, [
         el("h3", {}, t("Budget Settings")),
         field(t("Total trip budget (JPY)"), input),
         helpText(t("Leave the total blank to use the sum of your category budgets. Set category budgets where you want a spending guardrail.")),
+        el("h3", {}, t("Home currency")),
+        field(t("Home currency code"), homeCur),
+        field(t("Home currency rate (¥ per 1 unit)"), homeRate),
+        helpText(t("Optional. Shows an approximate home-currency figure next to balances. Enter the rate manually — it is not fetched online.")),
         el("h3", {}, t("Category Budgets")),
         ...BUDGET_CATEGORIES.map(c =>
           field(`${c.emoji} ${t(c.label)}`, categoryInputs.get(c.id))),
         el("button", { class: "btn-primary", onclick: async () => {
           await vm.setBudgetSettings({
             totalBudget: input.value,
+            homeCurrency: homeCur.value,
+            homeRate: homeRate.value,
             categoryBudgets: Object.fromEntries([...categoryInputs.entries()]
               .map(([id, categoryInput]) => [id, categoryInput.value]))
           });

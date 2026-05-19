@@ -1,17 +1,20 @@
-import { formatInstant } from "../domain/datetime.js";
+import {
+  epochToZonedWallClock, formatInstant, zonedWallClockToEpoch
+} from "../domain/datetime.js";
 import { CUISINES, OSAKA_AREAS, optionLabel, t } from "../domain/i18n.js";
 import {
   RestaurantsViewModel,
   RESTAURANT_STATUSES
 } from "../viewmodels/RestaurantsViewModel.js";
 import {
-  el, emptyAction, field, openSheet, toast, mapsUrl, confirmDialog
+  el, empty, emptyAction, field, openSheet, toast, mapsUrl, confirmDialog
 } from "./components.js";
 
 const JAPAN_TZ = "Asia/Tokyo";
 
 export async function render(root, header, repo) {
   const vm = new RestaurantsViewModel(repo);
+  let filter = "All";
   await vm.load();
 
   header.setTitle(t("Restaurants"));
@@ -70,7 +73,7 @@ export async function render(root, header, repo) {
   }
 
   function detailSheet(restaurant) {
-    openSheet(() => el("div", { class: "restaurant-detail" }, [
+    openSheet(close => el("div", { class: "restaurant-detail" }, [
       el("h3", {}, restaurant.name),
       detailRow(t("Cuisine"), optionLabel(restaurant.cuisine)),
       detailRow(t("Status"), t(restaurant.status)),
@@ -87,6 +90,10 @@ export async function render(root, header, repo) {
         el("button", { class: "btn-primary", type: "button",
           onclick: () => openMap(restaurant) }, t("Open Map")),
         el("button", { class: "btn-secondary", type: "button",
+          onclick: () => { close(); addSheet(restaurant); } }, t("Edit"))
+      ]),
+      el("div", { class: "quick-actions" }, [
+        el("button", { class: "btn-secondary danger", type: "button",
           onclick: async () => {
             const ok = await confirmDialog({
               title: t("Delete restaurant?"),
@@ -94,7 +101,7 @@ export async function render(root, header, repo) {
             });
             if (!ok) return;
             await vm.deleteRestaurant(restaurant.id);
-            document.querySelector(".sheet-backdrop")?.remove();
+            close();
             paint();
             toast(t("Restaurant deleted"));
           } }, t("Delete"))
@@ -105,6 +112,26 @@ export async function render(root, header, repo) {
   function emptyState() {
     return emptyAction(t("No restaurants saved."), t("Add Restaurant"),
       () => addSheet());
+  }
+
+  function filterBar() {
+    const options = ["All", ...RESTAURANT_STATUSES];
+    return el("div", { class: "restaurant-filters", role: "tablist",
+      "aria-label": t("Filter by status") },
+      options.map(option => el("button", {
+        class: option === filter
+          ? "restaurant-filter is-selected" : "restaurant-filter",
+        type: "button",
+        role: "tab",
+        "aria-selected": String(option === filter),
+        onclick: () => { filter = option; paint(); }
+      }, t(option))));
+  }
+
+  function visibleRestaurants() {
+    return filter === "All"
+      ? vm.restaurants
+      : vm.restaurants.filter(r => r.status === filter);
   }
 
   function paint() {
@@ -118,7 +145,13 @@ export async function render(root, header, repo) {
       el("h2", {}, t("{count} restaurants", { count: vm.restaurants.length })),
       el("p", {}, t("Reservations, map links, cuisines, and notes."))
     ]));
-    for (const restaurant of vm.restaurants) {
+    root.appendChild(filterBar());
+    const shown = visibleRestaurants();
+    if (!shown.length) {
+      root.appendChild(empty(t("No restaurants match this filter.")));
+      return;
+    }
+    for (const restaurant of shown) {
       root.appendChild(restaurantCard(restaurant));
     }
   }
@@ -137,7 +170,7 @@ export async function render(root, header, repo) {
     ]);
   }
 
-  function addSheet() {
+  function addSheet(existing = null) {
     openSheet(close => {
       const name = el("input", { type: "text", autocomplete: "off" });
       const cuisine = optionSelect(CUISINES, t("Type of Cuisine"));
@@ -149,8 +182,18 @@ export async function render(root, header, repo) {
       const notes = el("textarea", { rows: "4",
         placeholder: t("Confirmation, must-order dishes, queue rules...") });
       const error = el("div", { class: "form-error", role: "alert", hidden: "hidden" });
+      if (existing) {
+        name.value = existing.name || "";
+        cuisine.value = existing.cuisine || "";
+        area.value = existing.area || "";
+        mapUrl.value = existing.mapUrl || "";
+        reservation.value = existing.reservationEpoch
+          ? epochToZonedWallClock(existing.reservationEpoch, JAPAN_TZ) : "";
+        status.value = existing.status || "Want to go";
+        notes.value = existing.notes || "";
+      }
       return el("div", {}, [
-        el("h3", {}, t("New Restaurant")),
+        el("h3", {}, existing ? t("Edit Restaurant") : t("New Restaurant")),
         field(t("Name of the Restaurant"), name),
         field(t("Type of Cuisine"), cuisine),
         field(t("Area"), area),
@@ -162,11 +205,14 @@ export async function render(root, header, repo) {
         el("button", { class: "btn-primary", type: "button", onclick: async () => {
           error.hidden = true;
           const ok = await vm.addRestaurant({
+            id: existing?.id,
             name: name.value,
             cuisine: cuisine.value,
             area: area.value,
             mapUrl: mapUrl.value,
-            reservationEpoch: reservation.value ? new Date(reservation.value).getTime() : null,
+            reservationEpoch: reservation.value
+              ? zonedWallClockToEpoch(reservation.value, JAPAN_TZ)
+              : null,
             status: status.value,
             notes: notes.value
           });

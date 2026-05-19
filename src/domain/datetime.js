@@ -27,6 +27,20 @@ export function zonedWallClockToEpoch(localStr, tz) {
   return epoch;
 }
 
+// Inverse of zonedWallClockToEpoch: render an absolute instant as the
+// "YYYY-MM-DDTHH:mm" wall-clock string for `tz` (datetime-local input value).
+export function epochToZonedWallClock(epochMs, tz) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz, hourCycle: "h23",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit"
+  }).formatToParts(new Date(epochMs));
+  const p = Object.fromEntries(parts
+    .filter(part => part.type !== "literal")
+    .map(part => [part.type, part.value]));
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
+}
+
 export function formatInstant(epochMs, tz) {
   return new Intl.DateTimeFormat(undefined, {
     timeZone: tz, year: "numeric", month: "short", day: "numeric",

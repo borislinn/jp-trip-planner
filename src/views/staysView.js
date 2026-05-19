@@ -27,6 +27,8 @@ export async function render(root, header, repo) {
     header.setActions([
       el("button", { class: "btn-text", type: "button", "aria-label": t("Back to stays"),
         onclick: () => { selectedStayId = null; paint(); } }, "‹"),
+      el("button", { class: "btn-text", type: "button", "aria-label": t("Edit stay"),
+        onclick: () => addSheet(stay) }, "✎"),
       el("button", { class: "btn-text danger", type: "button",
         "aria-label": `Delete stay at ${stay.hotelName}`, title: "Delete stay",
         onclick: async () => {
@@ -105,21 +107,35 @@ export async function render(root, header, repo) {
     }
   }
 
-  function addSheet() {
+  function dateValue(epoch) {
+    const d = new Date(epoch);
+    const pad = n => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+
+  function addSheet(existing = null) {
     openSheet(close => {
       const hotel = el("input", { type: "text" });
       const addr = el("input", { type: "text" });
       const ref = el("input", { type: "text" });
       const ci = pickerInput("date", {
-        value: new Date().toISOString().slice(0, 10)
+        value: existing ? dateValue(existing.checkIn)
+          : new Date().toISOString().slice(0, 10)
       });
       const co = pickerInput("date", {
-        value: new Date(Date.now() + 86400000).toISOString().slice(0, 10)
+        value: existing ? dateValue(existing.checkOut)
+          : new Date(Date.now() + 86400000).toISOString().slice(0, 10)
       });
       const note = el("textarea", { rows: "2" });
       const error = el("div", { class: "form-error", role: "alert", hidden: "hidden" });
+      if (existing) {
+        hotel.value = existing.hotelName || "";
+        addr.value = existing.address || "";
+        ref.value = existing.bookingReference || "";
+        note.value = existing.note || "";
+      }
       return el("div", {}, [
-        el("h3", {}, t("New Stay")),
+        el("h3", {}, existing ? t("Edit Stay") : t("New Stay")),
         field(t("Hotel name"), hotel), field(t("Address"), addr),
         field(t("Booking reference"), ref),
         field(t("Check-in"), ci.element), field(t("Check-out"), co.element),
@@ -128,6 +144,7 @@ export async function render(root, header, repo) {
         el("button", { class: "btn-primary", onclick: async () => {
           error.hidden = true;
           const ok = await vm.addStay({
+            id: existing?.id,
             hotelName: hotel.value, address: addr.value,
             bookingReference: ref.value,
             checkIn: new Date(ci.input.value + "T12:00").getTime(),

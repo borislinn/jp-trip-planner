@@ -16,6 +16,7 @@ export class FlightsViewModel {
     const departureTZ = airportTimeZone(from) || d.departureTZ;
     const arrivalTZ = airportTimeZone(to) || d.arrivalTZ;
     await this.repo.put("flights", {
+      ...(d.id ? { id: d.id } : {}),
       flightNumber: d.flightNumber.trim(),
       airline: d.airline?.trim() || null,
       from,

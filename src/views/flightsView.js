@@ -1,5 +1,6 @@
 import { FlightsViewModel } from "../viewmodels/FlightsViewModel.js";
 import { formatFlightArrival, formatFlightDeparture } from "../domain/flights.js";
+import { epochToZonedWallClock } from "../domain/datetime.js";
 import { t } from "../domain/i18n.js";
 import { el, emptyAction, openSheet, field, toast, confirmDialog } from "./components.js";
 
@@ -37,6 +38,10 @@ export async function render(root, header, repo) {
       root.appendChild(el("div", { class: "card" }, [
         el("div", { class: "row" }, [
           el("strong", {}, `${f.flightNumber}${f.airline ? " · " + f.airline : ""}`),
+          el("div", { class: "card-actions" }, [
+          el("button", { class: "btn-text", type: "button",
+            "aria-label": `Edit flight ${f.flightNumber}`, title: "Edit flight",
+            onclick: () => addSheet(f) }, "✎"),
           el("button", { class: "btn-text", type: "button",
             "aria-label": `Delete flight ${f.flightNumber}`, title: "Delete flight",
             onclick: async () => {
@@ -47,6 +52,7 @@ export async function render(root, header, repo) {
               if (!ok) return;
               await vm.deleteFlight(f.id); paint();
             } }, "×")
+          ])
         ]),
         el("div", {}, `${f.from} → ${f.to}`),
         el("div", { class: "muted" },
@@ -65,7 +71,7 @@ export async function render(root, header, repo) {
         z === def ? { value: z, selected: "selected" } : { value: z }, z)));
   }
 
-  function addSheet() {
+  function addSheet(existing = null) {
     openSheet(close => {
       const localTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const num = el("input", { type: "text" });
@@ -88,8 +94,24 @@ export async function render(root, header, repo) {
         error.textContent = message;
         error.hidden = false;
       };
+      if (existing) {
+        num.value = existing.flightNumber || "";
+        air.value = existing.airline || "";
+        from.value = existing.from || "";
+        to.value = existing.to || "";
+        dep.value = epochToZonedWallClock(existing.departureEpoch, existing.departureTZ);
+        depTZ.value = existing.departureTZ;
+        arr.value = epochToZonedWallClock(existing.arrivalEpoch, existing.arrivalTZ);
+        arrTZ.value = existing.arrivalTZ;
+        pax.value = String(existing.passengers || 1);
+        dT.value = existing.departureTerminal || "";
+        dG.value = existing.departureGate || "";
+        aT.value = existing.arrivalTerminal || "";
+        aG.value = existing.arrivalGate || "";
+        note.value = existing.note || "";
+      }
       return el("div", {}, [
-        el("h3", {}, t("New Flight")),
+        el("h3", {}, existing ? t("Edit Flight") : t("New Flight")),
         field(t("Flight number"), num), field(t("Airline"), air),
         field(t("From"), from), field(t("To"), to),
         field(t("Departure (local)"), dep), field(t("Departure time zone"), depTZ),
@@ -106,6 +128,7 @@ export async function render(root, header, repo) {
             return;
           }
           const ok = await vm.addFlight({
+            id: existing?.id,
             flightNumber: num.value, airline: air.value,
             from: from.value, to: to.value,
             departureLocal: dep.value, departureTZ: depTZ.value,

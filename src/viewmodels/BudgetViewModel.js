@@ -87,7 +87,9 @@ export class BudgetViewModel {
       id: SETTINGS_ID,
       currencyCode: settings.currencyCode || "JPY",
       totalBudget: parseCurrencyInput(settings.totalBudget || 0),
-      categoryBudgets
+      categoryBudgets,
+      homeCurrency: (settings.homeCurrency || "").trim().toUpperCase() || null,
+      homeRate: Number(settings.homeRate) > 0 ? Number(settings.homeRate) : null
     };
   }
 
@@ -204,13 +206,20 @@ export class BudgetViewModel {
     return true;
   }
 
-  async setBudgetSettings({ totalBudget, categoryBudgets }) {
+  async setBudgetSettings({ totalBudget, categoryBudgets, homeCurrency, homeRate }) {
     this.settings.totalBudget = parseCurrencyInput(totalBudget);
     const nextBudgets = this.categoryBudgets;
     for (const c of BUDGET_CATEGORIES) {
       nextBudgets[c.id] = parseCurrencyInput(categoryBudgets?.[c.id] || 0);
     }
     this.settings.categoryBudgets = nextBudgets;
+    if (homeCurrency !== undefined) {
+      this.settings.homeCurrency = (homeCurrency || "").trim().toUpperCase() || null;
+    }
+    if (homeRate !== undefined) {
+      const rate = Number(homeRate);
+      this.settings.homeRate = rate > 0 ? rate : null;
+    }
     await this.persistSettings();
   }
 

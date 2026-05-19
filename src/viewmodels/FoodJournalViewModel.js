@@ -41,6 +41,7 @@ export class FoodJournalViewModel {
     const type = d.expenseType || d.mealType || null;
     const date = d.date || Date.now();
     const expense = await this.repo.put("meals", {
+      ...(d.id ? { id: d.id } : {}),
       name: cleanName,
       restaurant: cleanName,
       amount,
@@ -50,7 +51,12 @@ export class FoodJournalViewModel {
       date,
       receipt: d.receipt || null
     });
+    const existingEntry = d.id
+      ? (await this.repo.getAll("budgetEntries"))
+          .find(e => e.sourceExpenseId === expense.id)
+      : null;
     await this.repo.put("budgetEntries", {
+      ...(existingEntry ? { id: existingEntry.id } : {}),
       title: cleanName,
       amount,
       category: type || "other",

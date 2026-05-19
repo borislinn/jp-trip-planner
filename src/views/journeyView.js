@@ -11,6 +11,7 @@ import { getLanguage, t } from "../domain/i18n.js";
 import { formatCurrency } from "../domain/money.js";
 import { BudgetViewModel } from "../viewmodels/BudgetViewModel.js";
 import { StaysViewModel } from "../viewmodels/StaysViewModel.js";
+import { RestaurantsViewModel } from "../viewmodels/RestaurantsViewModel.js";
 import {
   AIRPORT_TRANSFER,
   ARRIVAL_TRANSFER,
@@ -30,8 +31,11 @@ const isKix = value => /KIX|KANSAI/i.test(value || "");
 export async function render(root, header, repo) {
   const staysVm = new StaysViewModel(repo);
   const budgetVm = new BudgetViewModel(repo);
-  await Promise.all([staysVm.load(), budgetVm.load()]);
+  const restaurantsVm = new RestaurantsViewModel(repo);
+  await Promise.all([staysVm.load(), budgetVm.load(), restaurantsVm.load()]);
   const stays = staysVm.stays;
+  const reservations = restaurantsVm.restaurants
+    .filter(r => Number.isFinite(r.reservationEpoch));
   const flights = (await repo.getAll("flights").catch(() => []))
     .sort((a, b) => a.departureEpoch - b.departureEpoch);
   const arrivalFlight = flights.find(f => isKix(`${f.to} ${f.arrivalAirport}`)) || null;
@@ -445,12 +449,23 @@ export async function render(root, header, repo) {
     ]);
   }
 
+  function reservationsOn(key) {
+    return reservations
+      .filter(r => dayKey(r.reservationEpoch) === key)
+      .sort((a, b) => a.reservationEpoch - b.reservationEpoch);
+  }
+
   function todayPlanCard() {
     const flightsToday = selectedFlights();
     const ins = checkIns(selectedDay);
     const outs = checkOuts(selectedDay);
     const stay = stayForNight(selectedDay);
     const rows = [
+      ...reservationsOn(selectedDay).map(r => ({
+        icon: "▦",
+        title: `${t("Reservation")}: ${r.name}`,
+        body: [timeInJapan(r.reservationEpoch), r.area].filter(Boolean).join(" · ")
+      })),
       ...flightsToday.map(flight => ({
         icon: flightKind(flight) === "arrival" ? "ARR" :
           flightKind(flight) === "departure" ? "DEP" : "FLT",
