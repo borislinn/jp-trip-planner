@@ -115,9 +115,12 @@ export async function render(root, header, repo) {
 
   function addSheet(existing = null) {
     openSheet(close => {
-      const hotel = el("input", { type: "text" });
-      const addr = el("input", { type: "text" });
-      const ref = el("input", { type: "text" });
+      const hotel = el("input", { type: "text",
+        autocomplete: "organization", autocapitalize: "words" });
+      const addr = el("input", { type: "text",
+        autocomplete: "street-address", autocapitalize: "words" });
+      const ref = el("input", { type: "text",
+        autocomplete: "off", autocapitalize: "characters", spellcheck: "false" });
       const ci = pickerInput("date", {
         value: existing ? dateValue(existing.checkIn)
           : new Date().toISOString().slice(0, 10)
@@ -126,7 +129,7 @@ export async function render(root, header, repo) {
         value: existing ? dateValue(existing.checkOut)
           : new Date(Date.now() + 86400000).toISOString().slice(0, 10)
       });
-      const note = el("textarea", { rows: "2" });
+      const note = el("textarea", { rows: "2", autocapitalize: "sentences" });
       const error = el("div", { class: "form-error", role: "alert", hidden: "hidden" });
       if (existing) {
         hotel.value = existing.hotelName || "";

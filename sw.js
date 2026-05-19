@@ -1,4 +1,4 @@
-const CACHE = "jp-trip-v42";
+const CACHE = "jp-trip-v43";
 const SHELL = [
   "./", "./index.html", "./styles.css", "./app.webmanifest",
   "./icons/icon-192.png", "./icons/icon-512.png",
@@ -30,11 +30,13 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   if (e.request.method !== "GET") return;
   e.respondWith(
-    fetch(e.request).then(res => {
-      const copy = res.clone();
-      caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
-      return res;
-    }).catch(() =>
-      caches.match(e.request).then(hit => hit || caches.match("./index.html")))
+    caches.match(e.request).then(hit => {
+      const fresh = fetch(e.request).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
+        return hit || res;
+      }).catch(() => hit || caches.match("./index.html"));
+      return hit || fresh;
+    })
   );
 });

@@ -6,6 +6,7 @@ const viewRoot = document.getElementById("viewRoot");
 const titleEl = document.getElementById("headerTitle");
 const actionsEl = document.getElementById("headerActions");
 const tabs = [...document.querySelectorAll(".tab")];
+let routeToken = 0;
 
 const header = {
   setTitle: t => { titleEl.textContent = t; },
@@ -58,6 +59,7 @@ function updateStaticLabels() {
 }
 
 async function route() {
+  const token = ++routeToken;
   const name = (location.hash.replace("#/", "") || "journey");
   const key = ROUTES[name] ? name : "journey";
   const selectedTab = TAB_ROUTE[key] || key;
@@ -67,11 +69,17 @@ async function route() {
   loader.className = "view-loading";
   loader.setAttribute("role", "status");
   loader.setAttribute("aria-label", t("Loading"));
-  viewRoot.replaceChildren(loader);
+  const loaderTimer = setTimeout(() => {
+    if (token === routeToken) viewRoot.replaceChildren(loader);
+  }, 120);
   try {
     const mod = await ROUTES[key]();
+    if (token !== routeToken) return;
+    clearTimeout(loaderTimer);
     await mod.render(viewRoot, header, repo);
   } catch (error) {
+    if (token !== routeToken) return;
+    clearTimeout(loaderTimer);
     console.error(error);
     header.setTitle(key === "food" ? t("Expenses") :
       key === "restaurants" ? t("Restaurants") :

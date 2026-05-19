@@ -74,21 +74,29 @@ export async function render(root, header, repo) {
   function addSheet(existing = null) {
     openSheet(close => {
       const localTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const num = el("input", { type: "text" });
-      const air = el("input", { type: "text" });
-      const from = el("input", { type: "text", placeholder: "SFO" });
-      const to = el("input", { type: "text", placeholder: "HND" });
+      const num = el("input", { type: "text", autocomplete: "off",
+        autocapitalize: "characters", spellcheck: "false" });
+      const air = el("input", { type: "text", autocomplete: "organization",
+        autocapitalize: "words" });
+      const from = el("input", { type: "text", placeholder: "SFO",
+        autocomplete: "off", autocapitalize: "characters", spellcheck: "false" });
+      const to = el("input", { type: "text", placeholder: "HND",
+        autocomplete: "off", autocapitalize: "characters", spellcheck: "false" });
       const dep = el("input", { type: "datetime-local" });
       const depTZ = zoneSelect(localTZ);
       const arr = el("input", { type: "datetime-local" });
       const arrTZ = zoneSelect(localTZ);
       const pax = el("input", { type: "text", inputmode: "numeric",
         autocomplete: "off", value: "1" });
-      const dT = el("input", { type: "text" });
-      const dG = el("input", { type: "text" });
-      const aT = el("input", { type: "text" });
-      const aG = el("input", { type: "text" });
-      const note = el("textarea", { rows: "2" });
+      const dT = el("input", { type: "text", autocomplete: "off",
+        autocapitalize: "characters", spellcheck: "false" });
+      const dG = el("input", { type: "text", autocomplete: "off",
+        autocapitalize: "characters", spellcheck: "false" });
+      const aT = el("input", { type: "text", autocomplete: "off",
+        autocapitalize: "characters", spellcheck: "false" });
+      const aG = el("input", { type: "text", autocomplete: "off",
+        autocapitalize: "characters", spellcheck: "false" });
+      const note = el("textarea", { rows: "2", autocapitalize: "sentences" });
       const error = el("div", { class: "form-error", role: "alert", hidden: "hidden" });
       const fail = message => {
         error.textContent = message;

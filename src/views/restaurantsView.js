@@ -172,14 +172,16 @@ export async function render(root, header, repo) {
 
   function addSheet(existing = null) {
     openSheet(close => {
-      const name = el("input", { type: "text", autocomplete: "off" });
+      const name = el("input", { type: "text",
+        autocomplete: "organization", autocapitalize: "words" });
       const cuisine = optionSelect(CUISINES, t("Type of Cuisine"));
       const area = optionSelect(OSAKA_AREAS, t("Area"));
       const mapUrl = el("input", { type: "url", inputmode: "url",
-        placeholder: "https://maps.google.com/..." });
+        autocomplete: "url", autocapitalize: "none", autocorrect: "off",
+        spellcheck: "false", placeholder: "https://maps.google.com/..." });
       const reservation = el("input", { type: "datetime-local" });
       const status = statusSelect();
-      const notes = el("textarea", { rows: "4",
+      const notes = el("textarea", { rows: "4", autocapitalize: "sentences",
         placeholder: t("Confirmation, must-order dishes, queue rules...") });
       const error = el("div", { class: "form-error", role: "alert", hidden: "hidden" });
       if (existing) {

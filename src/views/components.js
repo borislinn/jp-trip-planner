@@ -22,6 +22,8 @@ const raf = cb =>
   typeof requestAnimationFrame === "function"
     ? requestAnimationFrame(cb)
     : setTimeout(cb, 0);
+let nextId = 0;
+const uniqueId = prefix => `${prefix}-${++nextId}`;
 function bodyClass(name, on) {
   const cl = typeof document !== "undefined"
     && document.body && document.body.classList;
@@ -60,13 +62,80 @@ export function toast(message) {
 // Locks the scrolling view behind a modal so iOS doesn't rubber-band the
 // page underneath. Reference-counted so stacked modals stay locked.
 let scrollLockCount = 0;
+let lockedScrollY = 0;
+function setAppInert(on) {
+  if (typeof document === "undefined" || typeof document.getElementById !== "function") return;
+  for (const id of ["appHeader", "viewRoot", "tabBar"]) {
+    const node = document.getElementById(id);
+    if (!node) continue;
+    if ("inert" in node) node.inert = on;
+    if (on) node.setAttribute("aria-hidden", "true");
+    else node.removeAttribute("aria-hidden");
+  }
+}
 function lockScroll() {
-  if (scrollLockCount++ === 0) bodyClass("modal-open", true);
+  if (scrollLockCount++ === 0) {
+    lockedScrollY = typeof window !== "undefined" ? window.scrollY || 0 : 0;
+    if (typeof document !== "undefined" && document.body?.style) {
+      document.body.style.top = `-${lockedScrollY}px`;
+    }
+    bodyClass("modal-open", true);
+    setAppInert(true);
+  }
 }
 function unlockScroll() {
   if (--scrollLockCount <= 0) {
     scrollLockCount = 0;
     bodyClass("modal-open", false);
+    if (typeof document !== "undefined" && document.body?.style) {
+      document.body.style.top = "";
+    }
+    setAppInert(false);
+    if (typeof window !== "undefined" && typeof window.scrollTo === "function") {
+      window.scrollTo(0, lockedScrollY);
+    }
+  }
+}
+function focusableWithin(root) {
+  if (!root || typeof root.querySelectorAll !== "function") return [];
+  return [...root.querySelectorAll(
+    "button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])"
+  )].filter(node => !node.disabled && !node.hidden);
+}
+function trapFocus(e, root) {
+  if (e.key !== "Tab") return;
+  const items = focusableWithin(root);
+  if (!items.length) {
+    e.preventDefault();
+    root.focus?.({ preventScroll: true });
+    return;
+  }
+  const first = items[0];
+  const last = items[items.length - 1];
+  if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault();
+    first.focus();
+  }
+}
+function nodeAttr(node, name) {
+  if (!node) return null;
+  if (typeof node.getAttribute === "function") return node.getAttribute(name);
+  return node.attributes?.[name] ?? null;
+}
+function labelDialog(node, content, fallback) {
+  const tag = (content?.tagName || content?.tag || "").toLowerCase();
+  const title = ["h1", "h2", "h3"].includes(tag)
+    ? content
+    : content?.querySelector?.("h1,h2,h3");
+  if (title?.setAttribute) {
+    const id = nodeAttr(title, "id") || uniqueId("dialog-title");
+    title.setAttribute("id", id);
+    node.setAttribute("aria-labelledby", id);
+  } else {
+    node.setAttribute("aria-label", fallback);
   }
 }
 
@@ -87,7 +156,10 @@ export function openSheet(build) {
     backdrop.addEventListener("transitionend", done, { once: true });
     setTimeout(done, 320);
   };
-  const onKeydown = e => { if (e.key === "Escape") close(); };
+  const onKeydown = e => {
+    if (e.key === "Escape") close();
+    else trapFocus(e, sheet);
+  };
   backdrop.addEventListener("click", e => { if (e.target === backdrop) close(); });
   sheet.appendChild(el("button", {
     class: "sheet-close",
@@ -95,7 +167,9 @@ export function openSheet(build) {
     "aria-label": t("Close"),
     onclick: close
   }, "×"));
-  sheet.appendChild(build(close));
+  const content = build(close);
+  labelDialog(sheet, content, t("Dialog"));
+  sheet.appendChild(content);
   // Keep the focused field above the iOS keyboard inside a fixed container.
   sheet.addEventListener("focusin", e => {
     setTimeout(() => e.target?.scrollIntoView?.({
@@ -147,11 +221,16 @@ export function confirmDialog({
       setTimeout(rm, 320);
       resolve(value);
     };
-    const onKey = e => { if (e.key === "Escape") finish(false); };
+    const onKey = e => {
+      if (e.key === "Escape") finish(false);
+      else trapFocus(e, card);
+    };
     backdrop.addEventListener("click", e => {
       if (e.target === backdrop) finish(false);
     });
-    card.appendChild(el("h3", {}, title));
+    const titleNode = el("h3", {}, title);
+    card.appendChild(titleNode);
+    labelDialog(card, titleNode, title);
     if (message) card.appendChild(el("p", { class: "confirm-message" }, message));
     card.appendChild(el("div", { class: "confirm-actions" }, [
       el("button", {
@@ -208,7 +287,18 @@ export function pickJSONFile() {
 }
 
 export function field(labelText, inputEl) {
-  return el("div", { class: "field" }, [el("label", {}, labelText), inputEl]);
+  const labelId = uniqueId("field-label");
+  const controlId = nodeAttr(inputEl, "id") || uniqueId("field");
+  const label = el("label", { id: labelId, for: controlId }, labelText);
+  if (inputEl?.setAttribute) {
+    inputEl.setAttribute("id", controlId);
+    const role = nodeAttr(inputEl, "role");
+    const tag = (inputEl.tagName || inputEl.tag || "").toLowerCase();
+    if (role && !["input", "select", "textarea"].includes(tag)) {
+      inputEl.setAttribute("aria-labelledby", labelId);
+    }
+  }
+  return el("div", { class: "field" }, [label, inputEl]);
 }
 
 function openNativePicker(input) {
@@ -279,7 +369,7 @@ export function progressBar(value, max, label = "", color = null) {
 // Full-screen image viewer. Tap anywhere to dismiss.
 export function lightbox(src) {
   const overlay = el("div", { class: "lightbox",
-    role: "dialog", "aria-label": "Receipt photo" });
+    role: "dialog", "aria-label": "Receipt photo", tabindex: "-1" });
   overlay.appendChild(el("img", { src, alt: "Receipt" }));
   let closed = false;
   const close = () => {
@@ -292,9 +382,13 @@ export function lightbox(src) {
     setTimeout(done, 320);
   };
   overlay.addEventListener("click", close);
+  overlay.addEventListener("keydown", e => {
+    if (e.key === "Escape" || e.key === "Enter" || e.key === " ") close();
+  });
   lockScroll();
   document.body.appendChild(overlay);
   raf(() => setOpen(overlay, true));
+  overlay.focus?.({ preventScroll: true });
 }
 
 // Receipt photo picker. Imports the downscaler lazily so this module stays
@@ -305,7 +399,14 @@ export function receiptPicker(initial = null) {
   const input = el("input", {
     type: "file", accept: "image/*", capture: "environment"
   });
-  const thumb = el("img", { class: "receipt-thumb", alt: "Receipt preview" });
+  const thumb = el("img", {
+    class: "receipt-thumb",
+    alt: "Receipt preview",
+    role: "button",
+    tabindex: "0",
+    loading: "lazy",
+    decoding: "async"
+  });
   thumb.style.display = "none";
   const status = el("div", { class: "muted" });
   const removeBtn = el("button", { class: "btn-text danger", type: "button" }, "Remove");
@@ -327,6 +428,12 @@ export function receiptPicker(initial = null) {
   }
   removeBtn.addEventListener("click", () => show(null));
   thumb.addEventListener("click", () => value && lightbox(value));
+  thumb.addEventListener("keydown", e => {
+    if ((e.key === "Enter" || e.key === " ") && value) {
+      e.preventDefault();
+      lightbox(value);
+    }
+  });
   input.addEventListener("change", async () => {
     const file = input.files?.[0];
     if (!file) return;

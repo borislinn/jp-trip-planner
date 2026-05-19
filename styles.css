@@ -18,8 +18,11 @@
   }
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html, body { margin: 0; height: 100%; }
-html { -webkit-text-size-adjust: 100%; }
+html, body { margin: 0; min-height: 100%; }
+html {
+  -webkit-text-size-adjust: 100%;
+  color-scheme: light dark;
+}
 body {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
     system-ui, "Helvetica Neue", Arial, sans-serif;
@@ -27,11 +30,18 @@ body {
   line-height: 1.4;
   -webkit-font-smoothing: antialiased;
   background: var(--bg); color: var(--text);
-  display: flex; flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
+  overflow-x: hidden;
+  touch-action: pan-y;
 }
-body.modal-open .view-root { overflow: hidden; }
+body.modal-open {
+  overflow: hidden;
+  position: fixed;
+  left: 0;
+  right: 0;
+  width: 100%;
+}
 .app-header {
   position: sticky; top: 0; z-index: 10;
   padding: calc(env(safe-area-inset-top) + 14px) 18px 12px;
@@ -43,6 +53,12 @@ body.modal-open .view-root { overflow: hidden; }
   display: flex; align-items: center; justify-content: space-between;
 }
 .app-header h1 { font-size: 1.45rem; margin: 0; }
+.app-header h1 {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .header-actions {
   display: flex; align-items: center; gap: 12px; flex-shrink: 0;
 }
@@ -56,12 +72,11 @@ body.modal-open .view-root { overflow: hidden; }
   color: var(--danger);
 }
 .view-root {
-  flex: 1; overflow-y: auto;
-  overscroll-behavior: contain;
   width: 100%;
   max-width: 760px;
   margin: 0 auto;
   padding: 18px 16px calc(env(safe-area-inset-bottom) + 92px);
+  touch-action: pan-y;
 }
 .tab-bar {
   position: fixed; bottom: 0; left: 0; right: 0;
@@ -77,6 +92,8 @@ body.modal-open .view-root { overflow: hidden; }
   flex: 1; background: none; border: none; color: var(--muted);
   padding: 9px 0 8px; display: flex;
   flex-direction: column; align-items: center; gap: 4px;
+  min-height: 56px;
+  touch-action: manipulation;
 }
 .tab-label { font-size: .68rem; font-weight: 700; }
 .tab[aria-selected="true"] { color: var(--accent); }
@@ -255,6 +272,9 @@ body.modal-open .view-root { overflow: hidden; }
 .row strong { overflow-wrap: anywhere; }
 .muted { color: var(--muted); font-size: .85rem; }
 input, select, textarea, button { font: inherit; color: var(--text); }
+button, input, select, textarea, a {
+  touch-action: manipulation;
+}
 input[type="number"] {
   -moz-appearance: textfield;
   -webkit-appearance: none;
@@ -286,6 +306,13 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+[role="tab"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 .btn-primary {
   background: var(--accent); color: #fff; border: none;
   border-radius: 8px; padding: 12px; width: 100%; font-weight: 600;
@@ -315,6 +342,9 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   position: fixed; inset: 0; background: rgba(0,0,0,.4);
   display: flex; align-items: flex-end; z-index: 50;
   opacity: 0;
+  overscroll-behavior: contain;
+  padding-top: env(safe-area-inset-top);
+  touch-action: none;
   transition: opacity .26s ease;
 }
 .sheet-backdrop.is-open { opacity: 1; }
@@ -325,10 +355,12 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   max-height: 90vh;
   max-height: 90dvh;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   position: relative;
   box-shadow: 0 -18px 48px rgba(0,0,0,.18);
   transform: translateY(100%);
+  touch-action: pan-y;
   transition: transform .3s cubic-bezier(.32,.72,0,1);
 }
 .sheet-backdrop.is-open .sheet { transform: translateY(0); }
@@ -542,9 +574,11 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   gap: 12px;
   margin: 0 -16px;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
   padding: 0 16px 4px;
   scroll-snap-type: x proximity;
+  touch-action: pan-x;
 }
 .date-pill {
   background: var(--surface);
@@ -739,7 +773,9 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   gap: 7px;
   grid-template-columns: auto auto auto auto minmax(0, 1fr);
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
+  touch-action: pan-x;
 }
 .transfer-route span,
 .transfer-route strong {
@@ -995,6 +1031,11 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   gap: 12px;
   justify-content: space-between;
 }
+.restaurant-card__head > :first-child,
+.transfer-card__head > :first-child,
+.overview-hero__top > :first-child {
+  min-width: 0;
+}
 .restaurant-card h2 {
   font-size: 1.24rem;
   line-height: 1.16;
@@ -1187,6 +1228,8 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   margin-bottom: 14px;
   padding-bottom: 2px;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
 }
 .restaurant-filter {
   flex-shrink: 0;
@@ -1194,7 +1237,8 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   color: var(--muted);
   border: 1px solid var(--border);
   border-radius: 999px;
-  padding: 7px 14px;
+  min-height: 44px;
+  padding: 10px 14px;
   font-size: .85rem;
   font-weight: 700;
 }
@@ -1282,29 +1326,23 @@ svg { display: block; max-width: 100%; }
    interactive surface needs an explicit pressed state. */
 .btn-primary, .btn-secondary, .btn-text, .tab, .feature-tile, .date-pill,
 .stay-card, .sheet-close, .header-actions button,
-.category-choice, .quick-actions button {
+.category-choice, .quick-actions button, .restaurant-filter {
   transition: transform .12s ease, opacity .12s ease,
     background-color .15s ease, border-color .15s ease;
 }
 .btn-primary:active, .btn-secondary:active, .btn-text:active,
 .feature-tile:active, .date-pill:active, .stay-card:active,
 .sheet-close:active, .header-actions button:active,
-.category-choice:active, .tab:active, .quick-actions button:active {
+.category-choice:active, .tab:active, .quick-actions button:active,
+.restaurant-filter:active {
   transform: scale(.975);
   opacity: .82;
 }
 
-/* Each view's sections settle in instead of snapping. */
-@keyframes view-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: none; }
-}
-.view-root > * { animation: view-in .26s ease both; }
-
 .view-loading {
   display: grid;
   place-items: center;
-  min-height: 50vh;
+  min-height: 50svh;
 }
 .view-loading::after {
   content: "";

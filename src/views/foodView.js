@@ -54,6 +54,13 @@ export async function render(root, header, repo) {
       m.comment ? el("div", { class: "muted" }, m.comment) : null,
       m.receipt ? el("img", { class: "receipt-thumb", src: m.receipt,
         alt: "Receipt", "aria-label": "View receipt",
+        role: "button", tabindex: "0", loading: "lazy", decoding: "async",
+        onkeydown: e => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            lightbox(m.receipt);
+          }
+        },
         onclick: () => lightbox(m.receipt) }) : null,
       withDelete ? el("div", { class: "card-actions" }, [
       el("button", { class: "btn-text", type: "button",
@@ -185,12 +192,13 @@ export async function render(root, header, repo) {
 
   function addSheet(existing = null) {
     openSheet(close => {
-      const name = el("input", { type: "text" });
+      const name = el("input", { type: "text", autocomplete: "off",
+        autocapitalize: "words" });
       const amount = moneyInput({}, vm.settings.currencyCode);
       const type = categoryPicker(existing?.expenseType || existing?.mealType || null);
       const spentAt = el("input", { type: "datetime-local",
         value: localDateTimeValue(existing ? new Date(existing.date) : new Date()) });
-      const comment = el("textarea", { rows: "4" });
+      const comment = el("textarea", { rows: "4", autocapitalize: "sentences" });
       const error = el("div", { class: "form-error", role: "alert", hidden: "hidden" });
 
       const receipt = receiptPicker(existing?.receipt || null);

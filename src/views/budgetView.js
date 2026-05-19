@@ -153,6 +153,7 @@ export async function render(root, header, repo) {
       ]));
       const homeCur = el("input", {
         type: "text", autocomplete: "off", maxlength: "3",
+        autocapitalize: "characters", spellcheck: "false",
         placeholder: "USD", value: vm.settings.homeCurrency || ""
       });
       const homeRate = el("input", {
