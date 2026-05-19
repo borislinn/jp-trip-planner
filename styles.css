@@ -780,8 +780,12 @@ a:focus-visible,
   border: 1px solid var(--border);
   border-radius: 999px;
   font-size: .78rem;
+  line-height: 1.2;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   padding: 6px 9px;
-  white-space: nowrap;
+  text-align: center;
+  white-space: normal;
 }
 .transfer-route strong {
   background: var(--accent-soft);
